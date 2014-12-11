@@ -26,6 +26,7 @@ class Bug(object):
         self.colors = {}
         self.frame = None
         self.position = None
+        self.finished = False
 
     def color(self, color):
         self.colors.get('color', 0)
@@ -140,6 +141,7 @@ class Map(object):
             tower_positions[(tower.position.x, tower.position.y)] = tower
 
         show_rows = []
+        max_elem_len = 1
         for y, row in enumerate(self.rows):
             show_row = []
             for x, val in enumerate(row):
@@ -147,12 +149,20 @@ class Map(object):
                 tower = tower_positions.get((x,y))
 
                 if bugs:
-                    show_row.append(self.show_bugs(bugs))
+                    elem = self.show_bugs(bugs)
                 elif tower:
-                    show_row.append(tower.id)
+                    elem = tower.id
                 else:
-                    show_row.append(val)
+                    elem = val
+                show_row.append(elem)
+                if len(elem) > max_elem_len:
+                    max_elem_len = len(elem)
             show_rows.append(show_row)
+
+        # all elements should have the same length
+        for y, row in enumerate(show_rows):
+            for x, elem in enumerate(row):
+                row[x] = elem + (max_elem_len - len(elem)) * ' '
 
         print('\n'.join(['  '.join(row) for row in show_rows]))
 
@@ -229,16 +239,33 @@ class TDGame(object):
         pass
 
     def move_bugs(self):
-        pass
+        for bug in self.bugs.values():
+            if not bug.position:
+                continue
+            # get bug position on bug road
+            if self.is_bug_finished(bug):
+                bug.finished = True
+            bug.position = self.next_bug_pos(bug)
+
+    def is_bug_finished(self, bug):
+        return bug.position == self.map.end
+
+    def next_bug_pos(self, bug):
+        if not bug.position:
+            return None
+        try:
+            bug_pos_index = self.map.bug_road.index(bug.position)
+            if bug_pos_index + 1 >= len(self.map.bug_road):
+                return None
+            return self.map.bug_road[bug_pos_index+1]
+        except ValueError:
+            return None 
 
     def put_bugs_on_map(self):
         for bug in self.bugs.values():
             if bug.frame == self.frame:
                 # the bug will enter the game
                 bug.position = self.map.start
-
-    def enter_bugs(self):
-        pass
 
     def shoot(self, actions):
         pass
