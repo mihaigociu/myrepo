@@ -26,6 +26,7 @@ class Bug(object):
         self.colors = {}
         self.frame = None
         self.position = None
+        self.dead = False
         self.finished = False
 
     def color(self, color):
@@ -212,16 +213,25 @@ class TDGame(object):
         self.settings = False
         self.bugs = None
         self.map = None
+        self.life = 0
+        self.money = 0
 
     def initialize(self, f_in, f_actions=None):
         self.settings = self.read_settings(f_in)
         self.bugs = self.read_bugs(f_in)
         self.map = self.read_map(f_in)
+
+        self.life = self.get_setting('starting_life')
+        self.money = self.get_setting('starting_money')
+
         self.actions = []
         if f_actions:
             self.actions = self.read_actions(f_actions)
         self.is_initialized = True
         self.simulation_started = False
+
+    def get_setting(self, name):
+        return self.settings.get(name)
 
     def start_simulation(self):
         if not self.is_initialized:
@@ -244,6 +254,7 @@ class TDGame(object):
         self.build_towers(actions)
         self.move_bugs()
         self.put_bugs_on_map()
+        self.shoot(actions)
 
         self.print_state()
 
@@ -253,6 +264,13 @@ class TDGame(object):
         for action in actions:
             if not action.action_type == Action.NEW_TOWER:
                 continue
+
+            # check if we have enough resources
+            if self.money < self.get_setting('tower_cost'):
+                print('ERROR: not enought resources to build a tower')
+                return
+            self.money -= self.get_setting('tower_cost')
+
             tower = Tower(action.attrs.get('name'))
             tower.set_colors(action.attrs.get('colors'))
             tower.set_position(action.attrs.get('position'))
@@ -288,7 +306,12 @@ class TDGame(object):
                 bug.position = self.map.start
 
     def shoot(self, actions):
-        pass
+        if not actions:
+            return
+        for action in actions:
+            if not action.action_type == Action.SHOOT:
+                continue
+
 
     def check_dead_bugs(self):
         pass
@@ -309,6 +332,10 @@ class TDGame(object):
 
     def print_state(self):
         self.map.show(self.bugs.values(), self.towers.values())
+
+        print('Life: %s' % (self.life,))
+        print('Money: %s' % (self.money,))
+
         for bug in self.bugs.values():
             print(bug)
         for tower in self.towers.values():
@@ -391,7 +418,7 @@ class TDGame(object):
         line = f_in.readline()
         m = re_settings.match(line)
         while m:
-            settings[m.group('name')] = m.group('value')
+            settings[m.group('name')] = int(m.group('value'))
             line = f_in.readline()
             m = re_settings.match(line)
 
