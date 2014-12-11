@@ -41,6 +41,14 @@ class Bug(object):
     def set_position(self, x, y):
         self.position = Position(x, y)
 
+    def check_dead(self):
+        dead = True
+        for value in self.colors.values():
+            if value > 0:
+                dead = False
+                break
+        self.dead = dead
+
     def __str__(self):
         return '%s - %s - %s' % (self.id, self.colors, self.frame)
 
@@ -255,6 +263,11 @@ class TDGame(object):
         self.move_bugs()
         self.put_bugs_on_map()
         self.shoot(actions)
+        # will mark dead bugs
+        self.check_dead_bugs()
+        # compute damage
+        self.compute_damage()
+        self.check_life()
 
         self.print_state()
 
@@ -294,7 +307,7 @@ class TDGame(object):
         try:
             bug_pos_index = self.map.bug_road.index(bug.position)
             if bug_pos_index + 1 >= len(self.map.bug_road):
-                return None
+                return bug.position
             return self.map.bug_road[bug_pos_index+1]
         except ValueError:
             return None 
@@ -311,23 +324,49 @@ class TDGame(object):
         for action in actions:
             if not action.action_type == Action.SHOOT:
                 continue
+            tower_id = action.attrs.get('tower_name')
+            bug_id = action.attrs.get('bug_name')
+            tower = self.towers.get(tower_id)
+            bug = self.bugs.get(bug_id)
+            self.apply_shot(tower, bug)
 
+    def apply_shot(self, tower, bug):
+        for color, value in tower.colors.items():
+            bug_value = bug.colors.get(color) - value
+            bug.colors[color] = bug_value
 
     def check_dead_bugs(self):
-        pass
+        for bug in self.bugs.values():
+            bug.check_dead()
 
     def compute_damage(self):
-        # including collateral
-        pass
+        damage = 0
+        for bug in self.bugs.values():
+            damage += self.damage_per_bug(bug)
+        self.life -= damage
+
+    def damage_per_bug(self, bug):
+        damage = 0
+        # direct damage
+        if bug.finished:
+            damage += sum(val for val in bug.colors.values() if val > 0)
+        # collateral damage
+        damage += -(sum(val for val in bug.colors.values() if val < 0))
+        return damage
 
     def check_life(self):
         # if life is <= 0 then the solution is invalid and the games stops
-        pass
+        if self.life <= 0:
+            raise Exception('YOU ARE DEAD !!!')
 
     def give_rewards(self):
         pass
 
     def check_game_finished(self):
+        pass
+
+    def clear_bugs(self):
+        # will clear dead bugs or bugs who have finished the race
         pass
 
     def print_state(self):
