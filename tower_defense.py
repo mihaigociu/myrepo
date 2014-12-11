@@ -54,10 +54,21 @@ class Tower(object):
         self.position = None
 
     def set_colors(self, colors_str):
-        pass
+        for color_str in colors_str.split(','):
+            name = color_str.split(':')[0]
+            val = int(color_str.split(':')[1])
+            self.colors[name] = val
 
     def set_position(self, pos_str):
-        pass
+        x = int(pos_str.split(',')[0])
+        y = int(pos_str.split(',')[1])
+        self.position = Position(x, y)
+
+    def __str__(self):
+        return '%s - %s - %s' % (self.id, self.colors, self.position)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class Map(object):
@@ -230,13 +241,22 @@ class TDGame(object):
         actions = self.frames.get(self.frame)
         print(actions)
 
+        self.build_towers(actions)
         self.move_bugs()
         self.put_bugs_on_map()
 
         self.print_state()
 
     def build_towers(self, actions):
-        pass
+        if not actions:
+            return
+        for action in actions:
+            if not action.action_type == Action.NEW_TOWER:
+                continue
+            tower = Tower(action.attrs.get('name'))
+            tower.set_colors(action.attrs.get('colors'))
+            tower.set_position(action.attrs.get('position'))
+            self.towers[tower.id] = tower
 
     def move_bugs(self):
         for bug in self.bugs.values():
