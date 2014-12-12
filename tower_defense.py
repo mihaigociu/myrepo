@@ -278,7 +278,6 @@ class TDGame(object):
         finished = self.check_game_finished()
         if finished:
             print('The game has finished. You KILLED all the BUGS!')
-            return
         self.clear_bugs()
 
         self.print_state()
@@ -416,9 +415,12 @@ class TDGame(object):
 
     def clear_bugs(self):
         # will clear dead bugs or bugs who have finished the race
+        del_bugs = []
         for bug_id, bug in self.bugs.items():
             if bug.dead:
-                self.bugs.pop(bug_id)
+                del_bugs.append(bug_id)
+        for bug_id in del_bugs:
+            self.bugs.pop(bug_id)
 
     def print_state(self):
         self.map.show(self.bugs.values(), self.towers.values())
