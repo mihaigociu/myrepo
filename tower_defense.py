@@ -425,7 +425,11 @@ class TDGame(object):
         if bug.finished:
             damage += sum(val for val in bug.colors.values() if val > 0)
         # collateral damage
-        damage += -(sum(val for val in bug.colors.values() if val < 0))
+        for color in bug.colors:
+            val = bug.colors[color]
+            if val < 0:
+                damage += -val
+            bug.colors[color] = 0
         return damage
 
     def _check_life(self):
@@ -581,6 +585,9 @@ if __name__ == '__main__':
     # at the end of the game you will have the list of actions in game.actions
 
     game.action_new_tower('T1', (3,1), {'red': 11})
+    game.action_new_tower('T2', (4,4), {'blue': 7})
+    game.action_new_tower('T3', (4,2), {'red': 4})
+    game.next_step()
     game.action_shoot('T1', 'B1')
 
     import ipdb;ipdb.set_trace()
