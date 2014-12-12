@@ -429,7 +429,7 @@ class TDGame(object):
             val = bug.colors[color]
             if val < 0:
                 damage += -val
-            bug.colors[color] = 0
+                bug.colors[color] = 0
         return damage
 
     def _check_life(self):
@@ -566,11 +566,11 @@ if __name__ == '__main__':
 
     # put the input file (in.txt) and the solution file (if any) in the current dir
     f_in = open('01_letsGetToKnowEachOther.txt')
-    f_actions = open('solution.txt')
+    f_actions = open('01_solution.txt')
 
     game = TDGame()
     # f_actions is optional, use it if you want to test a solution
-    game.initialize(f_in, None)
+    game.initialize(f_in, f_actions)
     game.start_simulation()
     
     # go to next frame:
@@ -583,11 +583,5 @@ if __name__ == '__main__':
     # game.action_shoot('T3', 'B1')
 
     # at the end of the game you will have the list of actions in game.actions
-
-    game.action_new_tower('T1', (3,1), {'red': 11})
-    game.action_new_tower('T2', (4,4), {'blue': 7})
-    game.action_new_tower('T3', (4,2), {'red': 4})
-    game.next_step()
-    game.action_shoot('T1', 'B1')
 
     import ipdb;ipdb.set_trace()
