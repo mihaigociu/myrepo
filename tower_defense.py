@@ -575,4 +575,6 @@ if __name__ == '__main__':
     # shoot bug in next frame
     # game.action_shoot('T3', 'B1')
 
+    # at the end of the game you will have the list of actions in game.actions
+
     import ipdb;ipdb.set_trace()
