@@ -282,6 +282,22 @@ class TDGame(object):
 
         self.print_state()
 
+    def dump_actions(self, f_solution):
+        dump_actions = []
+        for action in self.actions:
+            rows = [
+                'action=%s' % (action.action_type, ),
+                'frame=%s' % (action.frame, )
+            ]
+            rows.extend([
+                '%s=%s' % (name, value)
+                for name, value in action.attrs.items()
+            ])
+            dump_action = '\n'.join(rows)
+            dump_actions.append(dump_action)    
+        f_solution.write('\n\n'.join(dump_actions))
+        f_solution.flush()
+
     def action_new_tower(self, tower_id, position, colors):
         x = position[0]
         y = position[1]
@@ -565,8 +581,9 @@ if __name__ == '__main__':
     print("Let's play TD Game")
 
     # put the input file (in.txt) and the solution file (if any) in the current dir
-    f_in = open('01_letsGetToKnowEachOther.txt')
-    f_actions = open('01_solution.txt')
+    f_in = open('02_warmingUp.txt')
+    f_actions = open('02_warmingUp_solution_1.txt')
+    f_solution_out = open('solution_out.txt', 'w')
 
     game = TDGame()
     # f_actions is optional, use it if you want to test a solution
