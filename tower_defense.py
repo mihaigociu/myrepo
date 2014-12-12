@@ -274,6 +274,12 @@ class TDGame(object):
         # compute damage
         self.compute_damage()
         self.check_life()
+        self.give_rewards()
+        finished = self.check_game_finished()
+        if finished:
+            print('The game has finished. You KILLED all the BUGS!')
+            return
+        self.clear_bugs()
 
         self.print_state()
 
@@ -288,9 +294,11 @@ class TDGame(object):
             pos = self.parse_tower_postion(action.attrs.get('position'))
             # check position is valid on map
             if not self.map.check_tower_pos(pos.x, pos.y):
-                print('ERROR: Can not build a tower on that position')
+                print('ERROR: Can not build a tower on position %s' % (pos,))
                 return
             # check that there are no other towers on this position
+            if self.is_tower_in_pos(pos.x, pos.y):
+                print('ERROR: Tower is already build on position %s' % (pos,))
 
             # check if we have enough resources
             if self.money < self.get_setting('tower_cost'):
@@ -302,6 +310,12 @@ class TDGame(object):
             tower.set_colors(action.attrs.get('colors'))
             tower.set_position(action.attrs.get('position'))
             self.towers[tower.id] = tower
+
+    def is_tower_in_pos(self, x, y):
+        for tower in self.towers.values():
+            if tower.position.x == x and tower.position.y == y:
+                return True
+        return False
 
     def parse_tower_postion(self, pos_str):
         x = int(pos_str.split(',')[0])
@@ -347,7 +361,17 @@ class TDGame(object):
             bug_id = action.attrs.get('bug_name')
             tower = self.towers.get(tower_id)
             bug = self.bugs.get(bug_id)
+
+            if not self.in_range(tower, bug):
+                print('ERROR: bug not in range of tower (%s - %s)' % (bug.id, tower.id))
+
             self.apply_shot(tower, bug)
+
+    def in_range(self, tower, bug):
+        tower_range = self.settings.get('tower_range')
+        dx = abs(tower.position.x - bug.position.x)
+        dy = abs(tower.position.y - bug.position.y)
+        return tower_range >= max(dx, dy)
 
     def apply_shot(self, tower, bug):
         for color, value in tower.colors.items():
@@ -379,20 +403,33 @@ class TDGame(object):
             raise Exception('YOU ARE DEAD !!!')
 
     def give_rewards(self):
-        pass
+        reward = self.settings.get('reward_per_bug')
+        for bug in self.bugs.values():
+            if bug.dead:
+                self.money += reward
 
     def check_game_finished(self):
-        pass
+        for bug in self.bugs.values():
+            if not bug.dead:
+                return False
+        return True
 
     def clear_bugs(self):
         # will clear dead bugs or bugs who have finished the race
-        pass
+        for bug_id, bug in self.bugs.items():
+            if bug.dead:
+                self.bugs.pop(bug_id)
 
     def print_state(self):
         self.map.show(self.bugs.values(), self.towers.values())
 
         print('Life: %s' % (self.life,))
         print('Money: %s' % (self.money,))
+        print('Tower range: %s' % (self.settings.get('tower_range')))
+        print('Tower cost: %s' % (self.settings.get('tower_cost')))
+        print('Reward per bug: %s' % (self.settings.get('reward_per_bug')))
+
+        print()
 
         for bug in self.bugs.values():
             print(bug)
