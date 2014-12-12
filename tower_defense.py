@@ -282,6 +282,28 @@ class TDGame(object):
 
         self.print_state()
 
+    def action_new_tower(self, tower_id, position, colors):
+        x = position[0]
+        y = position[1]
+        attrs = {
+            'name': tower_id,
+            'position': ','.join([str(x),str(y)]),
+            'colors': ','.join(['%s:%s' % (name, val)
+                                for name, val in colors.items()])
+        }
+        action = Action(Action.NEW_TOWER, self.frame+1, attrs)
+        self._add_action_to_game(action)
+
+    def action_shoot(self, tower_id, bug_id):
+        attrs = {'tower_name': tower_id, 'bug_name': bug_id}
+        action = Action(Action.SHOOT, self.frame+1, attrs)
+        self._add_action_to_game(action)        
+
+    def _add_action_to_game(self, action):
+        self.actions.append(action)
+        frame_actions = self.frames.setdefault(action.frame, [])
+        frame_actions.append(action)
+
     def build_towers(self, actions):
         if not actions:
             return
@@ -289,6 +311,11 @@ class TDGame(object):
             if not action.action_type == Action.NEW_TOWER:
                 continue
 
+            # check if id of tower already exists
+            tower_id = action.attrs.get('name')
+            if tower_id in self.towers:
+                print('ERROR: There is already a tower with the same id %s' % (tower_id,))
+                return
             # check if the position is valid
             pos = self.parse_tower_postion(action.attrs.get('position'))
             # check position is valid on map
@@ -351,6 +378,7 @@ class TDGame(object):
                 bug.position = self.map.start
 
     def shoot(self, actions):
+        already_shot = set()
         if not actions:
             return
         for action in actions:
@@ -358,13 +386,17 @@ class TDGame(object):
                 continue
             tower_id = action.attrs.get('tower_name')
             bug_id = action.attrs.get('bug_name')
+            if tower_id in already_shot:
+                print('ERROR: This tower already shot: %s' % (tower_id,))
+
             tower = self.towers.get(tower_id)
             bug = self.bugs.get(bug_id)
 
-            if not self.in_range(tower, bug):
+            if not bug or not self.in_range(tower, bug):
                 print('ERROR: bug not in range of tower (%s - %s)' % (bug.id, tower.id))
 
             self.apply_shot(tower, bug)
+            already_shot.add(tower_id)
 
     def in_range(self, tower, bug):
         tower_range = self.settings.get('tower_range')
@@ -531,5 +563,6 @@ if __name__ == '__main__':
     game = TDGame()
     game.initialize(f_in, f_actions)
     game.start_simulation()
+    game.action_new_tower('T3', (0,1), {'red': 1})
 
     import ipdb;ipdb.set_trace()
