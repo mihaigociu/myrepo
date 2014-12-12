@@ -581,8 +581,8 @@ if __name__ == '__main__':
     print("Let's play TD Game")
 
     # put the input file (in.txt) and the solution file (if any) in the current dir
-    f_in = open('02_warmingUp.txt')
-    f_actions = open('02_warmingUp_solution_1.txt')
+    f_in = open('03_thePowersThatBe.txt')
+    f_actions = open('03_thePowersThatBe_solution_1.txt')
     
     f_solution_out = open('solution_out.txt', 'w')
 
