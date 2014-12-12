@@ -457,6 +457,7 @@ class TDGame(object):
     def print_state(self):
         self.map.show(self.bugs.values(), self.towers.values())
 
+        print('Frame: %s' % (self.frame,))
         print('Life: %s' % (self.life,))
         print('Money: %s' % (self.money,))
         print('Tower range: %s' % (self.settings.get('tower_range')))
@@ -465,7 +466,9 @@ class TDGame(object):
 
         print()
 
-        for bug in self.bugs.values():
+        bugs = [bug for bug in self.bugs.values()]
+        bugs.sort(key=lambda bug: bug.frame)
+        for bug in bugs:
             print(bug)
         for tower in self.towers.values():
             print(tower)
@@ -558,12 +561,12 @@ if __name__ == '__main__':
     print("Let's play TD Game")
 
     # put the input file (in.txt) and the solution file (if any) in the current dir
-    f_in = open('in.txt')
+    f_in = open('01_letsGetToKnowEachOther.txt')
     f_actions = open('solution.txt')
 
     game = TDGame()
     # f_actions is optional, use it if you want to test a solution
-    game.initialize(f_in, f_actions)
+    game.initialize(f_in, None)
     game.start_simulation()
     
     # go to next frame:
@@ -576,5 +579,8 @@ if __name__ == '__main__':
     # game.action_shoot('T3', 'B1')
 
     # at the end of the game you will have the list of actions in game.actions
+
+    game.action_new_tower('T1', (3,1), {'red': 11})
+    game.action_shoot('T1', 'B1')
 
     import ipdb;ipdb.set_trace()
