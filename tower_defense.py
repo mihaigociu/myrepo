@@ -603,3 +603,6 @@ if __name__ == '__main__':
     # at the end of the game you will have the list of actions in game.actions
 
     import ipdb;ipdb.set_trace()
+
+    # dump actions to file
+    game.dump_actions(f_solution_out)
