@@ -561,9 +561,17 @@ if __name__ == '__main__':
     f_actions = open('solution.txt')
 
     game = TDGame()
+    # f_actions is optional, use it if you want to test a solution
     game.initialize(f_in, f_actions)
     game.start_simulation()
-    game.action_new_tower('T3', (0,1), {'red': 1})
-    game.action_shoot('T3', 'B1')
+    
+    # go to next frame:
+    # game.next_step()
+
+    # add new tower in next frame
+    # game.action_new_tower('T3', (0,1), {'red': 1})
+
+    # shoot bug in next frame
+    # game.action_shoot('T3', 'B1')
 
     import ipdb;ipdb.set_trace()
