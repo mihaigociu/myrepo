@@ -557,6 +557,7 @@ class TDGame(object):
 if __name__ == '__main__':
     print("Let's play TD Game")
 
+    # put the input file (in.txt) and the solution file (if any) in the current dir
     f_in = open('in.txt')
     f_actions = open('solution.txt')
 
