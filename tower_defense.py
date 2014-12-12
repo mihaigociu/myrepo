@@ -108,6 +108,12 @@ class Map(object):
                     return neighbor
         return None
 
+    def check_tower_pos(self, x, y):
+        pos_value = self.get_pos_value(x, y)
+        if not pos_value:
+            return False
+        return True
+
     def get_pos_value(self, x, y):
         if not self.check_in_map(x, y):
             return None
@@ -278,6 +284,14 @@ class TDGame(object):
             if not action.action_type == Action.NEW_TOWER:
                 continue
 
+            # check if the position is valid
+            pos = self.parse_tower_postion(action.attrs.get('position'))
+            # check position is valid on map
+            if not self.map.check_tower_pos(pos.x, pos.y):
+                print('ERROR: Can not build a tower on that position')
+                return
+            # check that there are no other towers on this position
+
             # check if we have enough resources
             if self.money < self.get_setting('tower_cost'):
                 print('ERROR: not enought resources to build a tower')
@@ -288,6 +302,11 @@ class TDGame(object):
             tower.set_colors(action.attrs.get('colors'))
             tower.set_position(action.attrs.get('position'))
             self.towers[tower.id] = tower
+
+    def parse_tower_postion(self, pos_str):
+        x = int(pos_str.split(',')[0])
+        y = int(pos_str.split(',')[1])
+        return Position(x, y)
 
     def move_bugs(self):
         for bug in self.bugs.values():
