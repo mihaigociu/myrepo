@@ -231,20 +231,20 @@ class TDGame(object):
         self.money = 0
 
     def initialize(self, f_in, f_actions=None):
-        self.settings = self.read_settings(f_in)
-        self.bugs = self.read_bugs(f_in)
-        self.map = self.read_map(f_in)
+        self.settings = self._read_settings(f_in)
+        self.bugs = self._read_bugs(f_in)
+        self.map = self._read_map(f_in)
 
-        self.life = self.get_setting('starting_life')
-        self.money = self.get_setting('starting_money')
+        self.life = self._get_setting('starting_life')
+        self.money = self._get_setting('starting_money')
 
         self.actions = []
         if f_actions:
-            self.actions = self.read_actions(f_actions)
+            self.actions = self._read_actions(f_actions)
         self.is_initialized = True
         self.simulation_started = False
 
-    def get_setting(self, name):
+    def _get_setting(self, name):
         return self.settings.get(name)
 
     def start_simulation(self):
@@ -254,7 +254,7 @@ class TDGame(object):
             return
         self.towers = {}
         self.frame = -1
-        self.frames = self.group_by_frame(self.actions)
+        self.frames = self._group_by_frame(self.actions)
         self.simulation_started = True
         self.print_state()
 
@@ -265,20 +265,20 @@ class TDGame(object):
         actions = self.frames.get(self.frame)
         print(actions)
 
-        self.build_towers(actions)
-        self.move_bugs()
-        self.put_bugs_on_map()
-        self.shoot(actions)
+        self._build_towers(actions)
+        self._move_bugs()
+        self._put_bugs_on_map()
+        self._shoot(actions)
         # will mark dead bugs
-        self.check_dead_bugs()
+        self._check_dead_bugs()
         # compute damage
-        self.compute_damage()
-        self.check_life()
-        self.give_rewards()
-        finished = self.check_game_finished()
+        self._compute_damage()
+        self._check_life()
+        self._give_rewards()
+        finished = self._check_game_finished()
         if finished:
             print('The game has finished. You KILLED all the BUGS!')
-        self.clear_bugs()
+        self._clear_bugs()
 
         self.print_state()
 
@@ -304,7 +304,7 @@ class TDGame(object):
         frame_actions = self.frames.setdefault(action.frame, [])
         frame_actions.append(action)
 
-    def build_towers(self, actions):
+    def _build_towers(self, actions):
         if not actions:
             return
         for action in actions:
@@ -317,50 +317,50 @@ class TDGame(object):
                 print('ERROR: There is already a tower with the same id %s' % (tower_id,))
                 return
             # check if the position is valid
-            pos = self.parse_tower_postion(action.attrs.get('position'))
+            pos = self._parse_tower_postion(action.attrs.get('position'))
             # check position is valid on map
             if not self.map.check_tower_pos(pos.x, pos.y):
                 print('ERROR: Can not build a tower on position %s' % (pos,))
                 return
             # check that there are no other towers on this position
-            if self.is_tower_in_pos(pos.x, pos.y):
+            if self._is_tower_in_pos(pos.x, pos.y):
                 print('ERROR: Tower is already build on position %s' % (pos,))
 
             # check if we have enough resources
-            if self.money < self.get_setting('tower_cost'):
+            if self.money < self._get_setting('tower_cost'):
                 print('ERROR: not enought resources to build a tower')
                 return
-            self.money -= self.get_setting('tower_cost')
+            self.money -= self._get_setting('tower_cost')
 
             tower = Tower(action.attrs.get('name'))
             tower.set_colors(action.attrs.get('colors'))
             tower.set_position(action.attrs.get('position'))
             self.towers[tower.id] = tower
 
-    def is_tower_in_pos(self, x, y):
+    def _is_tower_in_pos(self, x, y):
         for tower in self.towers.values():
             if tower.position.x == x and tower.position.y == y:
                 return True
         return False
 
-    def parse_tower_postion(self, pos_str):
+    def _parse_tower_postion(self, pos_str):
         x = int(pos_str.split(',')[0])
         y = int(pos_str.split(',')[1])
         return Position(x, y)
 
-    def move_bugs(self):
+    def _move_bugs(self):
         for bug in self.bugs.values():
             if not bug.position:
                 continue
             # get bug position on bug road
-            if self.is_bug_finished(bug):
+            if self._is_bug_finished(bug):
                 bug.finished = True
-            bug.position = self.next_bug_pos(bug)
+            bug.position = self._next_bug_pos(bug)
 
-    def is_bug_finished(self, bug):
+    def _is_bug_finished(self, bug):
         return bug.position == self.map.end
 
-    def next_bug_pos(self, bug):
+    def _next_bug_pos(self, bug):
         if not bug.position:
             return None
         try:
@@ -371,13 +371,13 @@ class TDGame(object):
         except ValueError:
             return None 
 
-    def put_bugs_on_map(self):
+    def _put_bugs_on_map(self):
         for bug in self.bugs.values():
             if bug.frame == self.frame:
                 # the bug will enter the game
                 bug.position = self.map.start
 
-    def shoot(self, actions):
+    def _shoot(self, actions):
         already_shot = set()
         if not actions:
             return
@@ -392,34 +392,34 @@ class TDGame(object):
             tower = self.towers.get(tower_id)
             bug = self.bugs.get(bug_id)
 
-            if not bug or not self.in_range(tower, bug):
+            if not bug or not self._in_range(tower, bug):
                 print('ERROR: bug not in range of tower (%s - %s)' % (bug.id, tower.id))
 
-            self.apply_shot(tower, bug)
+            self._apply_shot(tower, bug)
             already_shot.add(tower_id)
 
-    def in_range(self, tower, bug):
+    def _in_range(self, tower, bug):
         tower_range = self.settings.get('tower_range')
         dx = abs(tower.position.x - bug.position.x)
         dy = abs(tower.position.y - bug.position.y)
         return tower_range >= max(dx, dy)
 
-    def apply_shot(self, tower, bug):
+    def _apply_shot(self, tower, bug):
         for color, value in tower.colors.items():
             bug_value = bug.colors.get(color) - value
             bug.colors[color] = bug_value
 
-    def check_dead_bugs(self):
+    def _check_dead_bugs(self):
         for bug in self.bugs.values():
             bug.check_dead()
 
-    def compute_damage(self):
+    def _compute_damage(self):
         damage = 0
         for bug in self.bugs.values():
-            damage += self.damage_per_bug(bug)
+            damage += self._damage_per_bug(bug)
         self.life -= damage
 
-    def damage_per_bug(self, bug):
+    def _damage_per_bug(self, bug):
         damage = 0
         # direct damage
         if bug.finished:
@@ -428,24 +428,24 @@ class TDGame(object):
         damage += -(sum(val for val in bug.colors.values() if val < 0))
         return damage
 
-    def check_life(self):
+    def _check_life(self):
         # if life is <= 0 then the solution is invalid and the games stops
         if self.life <= 0:
             raise Exception('YOU ARE DEAD !!!')
 
-    def give_rewards(self):
+    def _give_rewards(self):
         reward = self.settings.get('reward_per_bug')
         for bug in self.bugs.values():
             if bug.dead:
                 self.money += reward
 
-    def check_game_finished(self):
+    def _check_game_finished(self):
         for bug in self.bugs.values():
             if not bug.dead:
                 return False
         return True
 
-    def clear_bugs(self):
+    def _clear_bugs(self):
         # will clear dead bugs or bugs who have finished the race
         del_bugs = []
         for bug_id, bug in self.bugs.items():
@@ -470,16 +470,16 @@ class TDGame(object):
         for tower in self.towers.values():
             print(tower)
 
-    def read_actions(self, f_actions):
+    def _read_actions(self, f_actions):
         actions = []
-        action = self.read_action(f_actions)
+        action = self._read_action(f_actions)
         while action:
             actions.append(action)
-            action = self.read_action(f_actions)
+            action = self._read_action(f_actions)
 
         return actions
 
-    def group_by_frame(self, actions):
+    def _group_by_frame(self, actions):
         frames = {}
         for action in actions:
             frame_actions = frames.get(action.frame)
@@ -489,7 +489,7 @@ class TDGame(object):
 
         return frames
 
-    def read_action(self, f_actions):
+    def _read_action(self, f_actions):
         type_line = f_actions.readline().strip()
         frame_line = f_actions.readline().strip()
         if (not type_line) or (not frame_line):
@@ -507,24 +507,24 @@ class TDGame(object):
 
         return Action(action_type, frame, attrs)
 
-    def read_map(self, f_in):
+    def _read_map(self, f_in):
         rows = []
         for line in f_in:
             if line:
                 rows.append(line.split())
         return Map(rows)
 
-    def read_bugs(self, f_in):
+    def _read_bugs(self, f_in):
         bugs = {}
         re_bug = 'B1 red=57 blue=39 frame=0'
         for line in f_in:
-            bug = self.read_bug(line)
+            bug = self._read_bug(line)
             if not bug:
                 break
             bugs[bug.id] = bug
         return bugs
 
-    def read_bug(self, line):
+    def _read_bug(self, line):
         attrs = line.strip().split()
         if not attrs:
             return None
@@ -537,7 +537,7 @@ class TDGame(object):
                 bug.set_color(key_val[0], key_val[1])
         return bug
 
-    def read_settings(self, f_in):
+    def _read_settings(self, f_in):
         settings = {}
         setting_names = '|'.join(
             ['starting_life', 'starting_money', 'tower_range',
@@ -564,5 +564,6 @@ if __name__ == '__main__':
     game.initialize(f_in, f_actions)
     game.start_simulation()
     game.action_new_tower('T3', (0,1), {'red': 1})
+    game.action_shoot('T3', 'B1')
 
     import ipdb;ipdb.set_trace()
