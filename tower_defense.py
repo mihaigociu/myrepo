@@ -368,10 +368,10 @@ class TDGame(object):
         for bug in self.bugs.values():
             if not bug.position:
                 continue
+            bug.position = self._next_bug_pos(bug)
             # get bug position on bug road
             if self._is_bug_finished(bug):
                 bug.finished = True
-            bug.position = self._next_bug_pos(bug)
 
     def _is_bug_finished(self, bug):
         return bug.position == self.map.end
@@ -583,6 +583,7 @@ if __name__ == '__main__':
     # put the input file (in.txt) and the solution file (if any) in the current dir
     f_in = open('02_warmingUp.txt')
     f_actions = open('02_warmingUp_solution_1.txt')
+    
     f_solution_out = open('solution_out.txt', 'w')
 
     game = TDGame()
