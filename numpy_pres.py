@@ -221,9 +221,23 @@ def random_walks_np(nwalks=5000, nsteps=1000):
 walks = random_walks_np()
 
 #---------------- Advanced - ndarray internals
+# - pointer to data
+# - data type: dtype
+# - shape (tuple)
+# - strides: the number of bytes to “step” in order to advance one element along a dimension
 
 arr = np.ones((3, 4, 5)
 arr.strides # navigtion in memory
 
+# Reshaping - returns a view of the same array but with a different shape
 arr = np.arange(8)
-arr.reshape((4,2)).reshape((2,4))
+arr_view = arr.reshape((4,2)).reshape((2,4))
+np.random.shuffle(arr_view)
+arr.strides
+arr_view.strides
+
+#----------------- Performance tips
+# - Convert Python loops and conditional logic to array operations 
+#   and boolean array operations
+# - Avoid copying data using array views (slicing)
+# - Use universal functions
