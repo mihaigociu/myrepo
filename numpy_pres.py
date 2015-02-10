@@ -176,8 +176,49 @@ q, r = qr(mat)
 np.round(r)
 
 #-------------------- Random number generation
+# efficiently generating arrays of sample values of probability distributions:
+# normal, binomial, uniform etc.
+from random import normalvariate
+N = 1000000
+%timeit samples = [normalvariate(0, 1) for _ in range(N)]
+%timeit samples = np.random.normal(size=N)
 
+# random walks example
+import random
 
+def random_walk(nsteps=1000):
+    position = 0
+    walk = [position]
+    for i in range(nsteps):
+        step = 1 if random.randint(0, 1) else -1
+        position += step
+        walk.append(position)
+    return walk
+
+def random_walk_np(nsteps=1000):
+    draws = np.random.randint(0, 2, size=nsteps)
+    steps = np.where(draws > 0, 1, -1)
+    walk = steps.cumsum()
+    return walk
+
+walk = random_walk_np(1000)
+# extract statistics
+walk.min()
+walk.max()
+# first time crossing 10/-10 border
+walk.argmax()
+(np.abs(walk) >= 10).argmax()
+
+plt.plot(walk)
+
+# multiple random walks at once
+def random_walks_np(nwalks=5000, nsteps=1000):
+    draws = np.random.randint(0, 2, size=(nwalks, nsteps))
+    steps = np.where(draws > 0, 1, -1)
+    walk = steps.cumsum(1)
+    return walk
+
+walks = random_walks_np()
 
 #---------------- Advanced - ndarray internals
 
