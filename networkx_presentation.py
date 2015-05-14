@@ -101,3 +101,11 @@ def draw_shortest_path(G, pos, start, end):
 GWords = generate_graph(words)
 nx.shortest_path(GWords, 'chaos', 'order')
 nx.shortest_path(GWords, 'geeks', 'smart')
+
+# graphs to json example: http://networkx.github.io/documentation/networkx-1.9.1/examples/javascript/force.html
+
+# pretty dump to json
+json.dump(d, open('/home/mihai/work/networkx_presentation/networkx_to_js.json','w'),
+            sort_keys=True, indent=4, separators=(',', ': '))
+
+# Check more examples at: http://networkx.github.io/documentation/networkx-1.9.1/examples/index.html
