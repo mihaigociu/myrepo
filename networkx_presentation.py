@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import requests
 
 # basic graph operations
 G=nx.Graph()
@@ -79,7 +80,7 @@ nx.draw_networkx(G, pos, node_color=colors)
 
 # draw graph with weights on edges
 edge_labels = {(n1,n2): G[n1][n2]['weight'] for (n1,n2) in G.edges()}
-pylab.figure(1)
+pylab.figure(1, figsize=(8, 8))
 nx.draw_networkx(G, pos, node_color=colors)
 nx.draw_networkx_edge_labels(G , pos, edge_labels=edge_labels)
 pylab.show()
@@ -88,7 +89,15 @@ def draw_shortest_path(G, pos, start, end):
     path = nx.shortest_path(G, start, end, weight='weight')
     colors = node_colors(G, path)
     edge_labels = {(n1,n2): G[n1][n2]['weight'] for (n1,n2) in G.edges()}
-    pylab.figure(1)
+    pylab.figure(1, figsize=(8, 8))
     nx.draw_networkx(G, pos, node_color=colors)
     nx.draw_networkx_edge_labels(G , pos, edge_labels=edge_labels)
     pylab.show()
+
+# Graph of Words example
+# http://networkx.github.io/documentation/networkx-1.9.1/examples/graph/words.html
+# generate_graph - from the above example
+# words taken from: http://www-cs-faculty.stanford.edu/~uno/sgb-words.txt
+GWords = generate_graph(words)
+nx.shortest_path(GWords, 'chaos', 'order')
+nx.shortest_path(GWords, 'geeks', 'smart')
