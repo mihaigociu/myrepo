@@ -94,6 +94,9 @@ def draw_shortest_path(G, pos, start, end):
     nx.draw_networkx_edge_labels(G , pos, edge_labels=edge_labels)
     pylab.show()
 
+
+#-----------------------Examples from networkx website-------------------------------------#
+
 # Graph of Words example
 # http://networkx.github.io/documentation/networkx-1.9.1/examples/graph/words.html
 # generate_graph - from the above example
@@ -109,3 +112,6 @@ json.dump(d, open('/home/mihai/work/networkx_presentation/networkx_to_js.json','
             sort_keys=True, indent=4, separators=(',', ': '))
 
 # Check more examples at: http://networkx.github.io/documentation/networkx-1.9.1/examples/index.html
+
+
+#-----------------------Simulating populations----------------------------------------------#
