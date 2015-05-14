@@ -115,3 +115,63 @@ json.dump(d, open('/home/mihai/work/networkx_presentation/networkx_to_js.json','
 
 
 #-----------------------Simulating populations----------------------------------------------#
+
+# inspired from http://timotheepoisot.fr/2012/05/18/networkx-metapopulations-python/
+
+class Patch:
+    def __init__(self, label, status='w', pos=(0,0)):
+        self.status = status
+        self.pos = pos
+        self.label = label
+
+    def __str__(self):
+        return(str(self.label))
+
+    def __repr__(self):
+        return(str(self.label))
+
+    def __hash__(self):
+        return hash(self.label)
+
+    def __eq__(self, other):
+        return self.label == other.label
+
+
+class Simulation(object):
+    nr_patches = 100   # Number of patches
+    p_ext = 0.01    # Probability of extinction (e)
+    p_col = 0.014   # Probability of colonization (c)
+    p_init = 0.02   # Probability that a patch will be occupied at the beginning
+    c_distance = 15  # An arbitrary parameter to determine which patches are connected
+
+    civs = ['r', 'b']
+    patches = []
+
+    def __init__(self):
+        self.graph = nx.Graph()
+        # generate positions in 2d space for patches
+        positions = np.random.uniform(high=100, size=(self.nr_patches,2))
+        # add patches to the graph
+        for i in range(self.nr_patches):
+            patch = Patch(label=i, pos=positions[i])
+            self.graph.add_node(patch)
+            self.patches.append(patch)
+        # add edges
+        for p1 in self.graph.nodes():
+            for p2 in self.graph.nodes():
+                dist = np.sqrt((p1.pos[1]-p2.pos[1])**2+(p1.pos[0]-p2.pos[0])**2)
+                if dist <= self.c_distance:
+                    self.graph.add_edge(p1,p2)
+
+        # place civilisations
+        civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
+                                            size=(len(self.civs),))
+        for i, civ_pos in enumerate(civ_posistions):
+            self.patches[civ_pos].status = self.civs[i]
+
+    def draw_graph(self):
+        pylab.figure(1, figsize=(8, 8))
+        nx.draw(self.graph, {patch: patch.pos for patch in self.graph.nodes()},
+                with_labels=True,
+                node_color=[patch.status for patch in self.graph.nodes()])
+        pylab.show()
