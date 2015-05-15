@@ -144,7 +144,8 @@ class Simulation(object):
     p_init = 0.02   # Probability that a patch will be occupied at the beginning
     c_distance = 15  # An arbitrary parameter to determine which patches are connected
 
-    civs = ['r', 'b']
+    civs = [{'color': 'r'}, {'color': 'b'}, {'color': 'y'}]
+    step = 0
     patches = []
 
     def __init__(self):
@@ -159,6 +160,8 @@ class Simulation(object):
         # add edges
         for p1 in self.graph.nodes():
             for p2 in self.graph.nodes():
+                if p1 == p2:
+                    continue
                 dist = np.sqrt((p1.pos[1]-p2.pos[1])**2+(p1.pos[0]-p2.pos[0])**2)
                 if dist <= self.c_distance:
                     self.graph.add_edge(p1,p2)
@@ -167,7 +170,45 @@ class Simulation(object):
         civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
                                             size=(len(self.civs),))
         for i, civ_pos in enumerate(civ_posistions):
-            self.patches[civ_pos].status = self.civs[i]
+            self.patches[civ_pos].status = self.civs[i]['color']
+            self.civs[i]['patches'] = set([self.patches[civ_pos]])
+
+    def run_simulation(self, steps=1):
+        for step in range(steps):
+            # do actions for each civ
+            for civ in self.civs:
+                # for each node a civ will try to expand to the neighbors
+                # at each step only one attempt to conquer a patch can be made
+                attempts = set()
+                conquered = set()
+                for patch in civ['patches']:
+                    for neighbor in self.graph[patch]:
+                        # make sure this civ doesn't own the patch already
+                        if neighbor.status == civ['color']:
+                            continue
+                        # an attempt was already made this turn
+                        if neighbor in attempts:
+                            continue
+                        # try to conquer the patch
+                        result = self.conquer(neighbor, civ)
+                        attempts.add(neighbor)
+                        if result:
+                            conquered.add(neighbor)
+                # claim conquered patches
+                for patch in conquered:
+                    patch.status = civ['color']
+                    civ['patches'].add(patch)
+
+            self.step += 1
+
+    def conquer(self, patch, civ):
+        # total number of neighbors plus the node itself
+        total = len(self.graph[patch]) + 1
+        # number of neighbors belonging to this civ
+        civ_ngbs = len([ngb for ngb in self.graph[patch]
+                        if ngb.status == civ['color']])
+        # random component
+        return bool(np.random.binomial(1, float(civ_ngbs)/total))
 
     def draw_graph(self):
         pylab.figure(1, figsize=(8, 8))
