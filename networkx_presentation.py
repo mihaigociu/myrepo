@@ -142,7 +142,7 @@ class Simulation(object):
     nr_patches = 100   # Number of patches
     c_distance = 15  # An arbitrary parameter to determine which patches are connected
 
-    def __init__(self, with_history=False):
+    def __init__(self, with_history=True):
         self.civs = [{'color': 'r'}, {'color': 'b'}, {'color': 'y'}]
         self.step = 0
         self.patches = []
