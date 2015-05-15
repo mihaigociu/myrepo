@@ -142,10 +142,12 @@ class Simulation(object):
     nr_patches = 100   # Number of patches
     c_distance = 15  # An arbitrary parameter to determine which patches are connected
 
-    def __init__(self):
+    def __init__(self, with_history=False):
         self.civs = [{'color': 'r'}, {'color': 'b'}, {'color': 'y'}]
         self.step = 0
         self.patches = []
+        self.history = []
+        self.with_history = with_history
 
         self.graph = nx.Graph()
         # generate positions in 2d space for patches
@@ -183,6 +185,10 @@ class Simulation(object):
                 if civ_counter > 2:
                     break
 
+        # keep track of changes in history
+        if self.with_history:
+            self.save_history()
+
     def run_simulation(self, steps=1):
         for step in range(steps):
             # do actions for each civ
@@ -213,6 +219,8 @@ class Simulation(object):
                     patch.status = civ['color']
                     civ['patches'].add(patch)
 
+            if self.with_history:
+                self.save_history()
             self.step += 1
 
     def conquer(self, patch, civ):
@@ -229,9 +237,22 @@ class Simulation(object):
             if civ['color'] == color:
                 return civ
 
+    def save_history(self):
+        self.history.append(
+            {civ['color']: len(civ['patches']) for civ in self.civs})
+
     def draw_graph(self):
         pylab.figure(1, figsize=(8, 8))
         nx.draw(self.graph, {patch: patch.pos for patch in self.graph.nodes()},
                 with_labels=True,
                 node_color=[patch.status for patch in self.graph.nodes()])
         pylab.show()
+
+    def draw_history(self):
+        time = range(1, len(self.history)+1)
+        args = []
+        for civ in self.civs:
+            args.append(time)
+            args.append([h[civ['color']] for h in self.history])
+            args.append(civ['color'])
+        pylab.plot(*args)
