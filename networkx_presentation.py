@@ -255,4 +255,5 @@ class Simulation(object):
             args.append(time)
             args.append([h[civ['color']] for h in self.history])
             args.append(civ['color'])
-        pylab.plot(*args, figure=pylab.figure(2, (8,8)))
+        kwargs = {'figure': pylab.figure(2, (8,8))}
+        pylab.plot(*args, **kwargs)
