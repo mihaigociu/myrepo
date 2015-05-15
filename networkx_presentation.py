@@ -115,7 +115,7 @@ json.dump(d, open('/home/mihai/work/networkx_presentation/networkx_to_js.json','
 # Check more examples at: http://networkx.github.io/documentation/networkx-1.9.1/examples/index.html
 
 
-#-----------------------Simulating populations----------------------------------------------#
+#-----------------------Simulating civilisations----------------------------------------------#
 
 # inspired from http://timotheepoisot.fr/2012/05/18/networkx-metapopulations-python/
 
