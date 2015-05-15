@@ -183,7 +183,7 @@ class Simulation(object):
                 civ_ngb.status = self.civs[i]['color']
                 self.civs[i]['patches'].add(civ_ngb)
                 civ_counter += 1
-                if civ_counter == 3:
+                if civ_counter > 2:
                     break
 
     def run_simulation(self, steps=1):
