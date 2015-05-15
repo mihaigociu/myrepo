@@ -193,6 +193,10 @@ class Simulation(object):
                         result = self.conquer(neighbor, civ)
                         attempts.add(neighbor)
                         if result:
+                            if neighbor.status != 'w':
+                                # the patch belongs to another civ
+                                other_civ = self.get_civ_by_color(neighbor.status)
+                                other_civ['patches'].remove(neighbor)
                             conquered.add(neighbor)
                 # claim conquered patches
                 for patch in conquered:
@@ -209,6 +213,11 @@ class Simulation(object):
                         if ngb.status == civ['color']])
         # random component
         return bool(np.random.binomial(1, float(civ_ngbs)/total))
+
+    def get_civ_by_color(self, color):
+        for civ in self.civs:
+            if civ['color'] == color:
+                return civ
 
     def draw_graph(self):
         pylab.figure(1, figsize=(8, 8))
