@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import requests
+import pylab
 
 # basic graph operations
 G=nx.Graph()
@@ -170,8 +171,20 @@ class Simulation(object):
         civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
                                             size=(len(self.civs),))
         for i, civ_pos in enumerate(civ_posistions):
-            self.patches[civ_pos].status = self.civs[i]['color']
-            self.civs[i]['patches'] = set([self.patches[civ_pos]])
+            # each civ will have 3 neighboring patches
+            civ_patch = self.patches[civ_pos]
+            civ_patch.status = self.civs[i]['color']
+            self.civs[i]['patches'] = set([civ_patch])
+            civ_counter = 1
+            for civ_ngb in self.graph[civ_patch]:
+                # choose neighbors that are not already taken
+                if civ_ngb.status != 'w':
+                    continue
+                civ_ngb.status = self.civs[i]['color']
+                self.civs[i]['patches'].add(civ_ngb)
+                civ_counter += 1
+                if civ_counter == 3:
+                    break
 
     def run_simulation(self, steps=1):
         for step in range(steps):
