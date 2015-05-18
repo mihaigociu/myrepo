@@ -102,12 +102,36 @@ def draw_shortest_path(G, pos, start, end):
 # http://networkx.github.io/documentation/networkx-1.9.1/examples/graph/words.html
 # generate_graph - from the above example
 # words taken from: http://www-cs-faculty.stanford.edu/~uno/sgb-words.txt
+
+def generate_graph(words):
+    from string import ascii_lowercase as lowercase
+    G = nx.Graph(name="words")
+    lookup = dict((c,lowercase.index(c)) for c in lowercase)
+    def edit_distance_one(word):
+        for i in range(len(word)):
+            left, c, right = word[0:i], word[i], word[i+1:]
+            j = lookup[c] # lowercase.index(c)
+            for cc in lowercase[j+1:]:
+                yield left + cc + right
+    candgen = ((word, cand) for word in sorted(words)
+               for cand in edit_distance_one(word) if cand in words)
+    G.add_nodes_from(words)
+    for word, cand in candgen:
+        G.add_edge(word, cand)
+    return G
+
 GWords = generate_graph(words)
 nx.shortest_path(GWords, 'chaos', 'order')
 nx.shortest_path(GWords, 'geeks', 'smart')
 
 # graphs to json example: http://networkx.github.io/documentation/networkx-1.9.1/examples/javascript/force.html
+import json
+from networkx.readwrite import json_graph
 
+G = nx.barbell_graph(6,3)
+for n in G:
+    G.node[n]['name'] = n
+d = json_graph.node_link_data(G)
 # pretty dump to json
 json.dump(d, open('/home/mihai/work/networkx_presentation/networkx_to_js.json','w'),
             sort_keys=True, indent=4, separators=(',', ': '))
