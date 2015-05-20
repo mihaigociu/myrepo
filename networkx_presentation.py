@@ -4,6 +4,11 @@ import numpy as np
 import requests
 import pylab
 
+%pylab inline
+
+# A standard programming interface and graph implementation that is suitable for many applications
+#--------------------------------------------------------------------------------------------------#
+
 # basic graph operations
 G=nx.Graph()
 G.add_nodes_from([1,2,3])
@@ -48,6 +53,8 @@ nx.draw(circ_tree, pos, node_size=20,alpha=0.5,node_color="blue", with_labels=Fa
 # Data Structure: "dictionary of dictionaries of dictionaries" as the basic network data structure
 G.adj
 btree.adj
+# scipy matrix
+nx.adjacency_matrix(G)
 
 #-------------------Shortest path example---------------------------#
 
