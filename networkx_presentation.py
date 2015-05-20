@@ -83,19 +83,10 @@ def node_colors(G, path):
             colors.append('r')
     return colors
 
-colors = node_colors(G, path)
-nx.draw_networkx(G, pos, node_color=colors)
-
-# draw graph with weights on edges
-edge_labels = {(n1,n2): G[n1][n2]['weight'] for (n1,n2) in G.edges()}
-pylab.figure(1, figsize=(8, 8))
-nx.draw_networkx(G, pos, node_color=colors)
-nx.draw_networkx_edge_labels(G , pos, edge_labels=edge_labels)
-pylab.show()
-
 def draw_shortest_path(G, pos, start, end):
     path = nx.shortest_path(G, start, end, weight='weight')
     colors = node_colors(G, path)
+    # draw graph with weights on edges
     edge_labels = {(n1,n2): G[n1][n2]['weight'] for (n1,n2) in G.edges()}
     pylab.figure(1, figsize=(8, 8))
     nx.draw_networkx(G, pos, node_color=colors)
