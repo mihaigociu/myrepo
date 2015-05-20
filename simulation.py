@@ -88,8 +88,6 @@ class Simulation(object):
                     break
 
     def run_simulation(self, steps=1):
-        if(steps > 100):
-            steps = 100
             
         for step in range(steps):
             # do actions for each civ
