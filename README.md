@@ -1,5 +1,4 @@
 
-    mkvirtualenv ...
     pip install -r req.txt
     python www.py
 
