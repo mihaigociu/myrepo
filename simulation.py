@@ -46,6 +46,9 @@ class Simulation(object):
         self.history = []
         self.nr_patches = nr_patches
         
+        if(self.nr_patches > 300):
+            self.nr_patches = 300
+        
         np.random.seed(seed)
 
         self.graph = nx.Graph()
@@ -85,6 +88,9 @@ class Simulation(object):
                     break
 
     def run_simulation(self, steps=1):
+        if(steps > 100):
+            steps = 100
+            
         for step in range(steps):
             # do actions for each civ
             for civ in self.civs:

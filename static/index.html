@@ -24,13 +24,13 @@
     
     <body>
         # of Nodes:
-        <input type="number" id="nodes" value="100" />
+        <input type="number" id="nodes" value="100" min="1" max="300" />
         Random seed:
         <input type="number" id="seed" value="1" />
         <button id="start">Start</button>
         <button id="step">Next step</button>
         Step size:
-        <input type="number" id="stepSize" placeholder="Step size" value="1" />
+        <input type="number" id="stepSize" placeholder="Step size" value="1" min="1" max="100" />
         
         <div id="canvas"></div>
         <div id="vis"></div>
