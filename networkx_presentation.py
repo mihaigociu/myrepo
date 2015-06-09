@@ -419,7 +419,7 @@ class WeightedPatch(Patch):
         return(str(self.weight))
 
 
-class SimulationComplexStrategy(SimulationRandomStrategy):
+class SimulationComplexStrategy(SimulationNaiveStrategy):
     c_distance = 12
     c_distance_extended = 15
     max_big_cities = 7 # max number of big cities on map
