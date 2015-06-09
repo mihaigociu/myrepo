@@ -224,9 +224,11 @@ class Simulation(object):
             for p2 in self.graph.nodes():
                 if p1 == p2:
                     continue
-                dist = np.sqrt((p1.pos[1]-p2.pos[1])**2+(p1.pos[0]-p2.pos[0])**2)
-                if dist <= self.c_distance:
+                if self.distance_2d(p1, p2) <= self.c_distance:
                     self.graph.add_edge(p1,p2)
+
+    def distance_2d(self, p1, p2):
+        return np.sqrt((p1.pos[1]-p2.pos[1])**2+(p1.pos[0]-p2.pos[0])**2)
 
     def generate_patch(self, label, pos):
         return Patch(label=label, pos=pos)
@@ -419,12 +421,27 @@ class WeightedPatch(Patch):
 
 class SimulationComplexStrategy(SimulationRandomStrategy):
     c_distance = 12
+    c_distance_extended = 15
     max_big_cities = 7 # max number of big cities on map
     max_cities = 4 # max number of cities for a big city
 
     def generate_patches_2d(self):
         super(SimulationComplexStrategy, self).generate_patches_2d()
+        # because we might get too many connected components in the graph, we will extend the edges
+        self.extend_edges()
         self.add_weights_to_patches()
+
+    def extend_edges(self):
+        components = [comp for comp in nx.connected_components(self.graph)]
+        if len(components) > 1:
+            for i in range(len(components) - 1):
+                for j in range(1, len(components)):
+                    comp_1 = components[i]
+                    comp_2 = components[j]
+                    for patch_1 in comp_1:
+                        for patch_2 in comp_2:
+                            if self.distance_2d(patch_1, patch_2) < self.c_distance_extended:
+                                self.graph.add_edge(patch_1, patch_2)
 
     def add_weights_to_patches(self):
         # max 5% of the nodes will be big cities
@@ -449,7 +466,7 @@ class SimulationComplexStrategy(SimulationRandomStrategy):
 
             towns = self.neighborhood(big_city, 2)
             for town in towns:
-                if town not in neighbors:
+                if town not in nodes:
                     continue
                 nodes.remove(town)
 
