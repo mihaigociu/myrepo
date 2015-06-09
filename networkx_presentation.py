@@ -425,7 +425,9 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
     max_big_cities = 7 # max number of big cities on map
     max_cities = 4 # max number of cities for a big city
 
-    _path_lengths = {}
+    def __init__(self, with_history=True):
+        self._path_lengths = {}
+        super(SimulationComplexStrategy, self).__init__(with_history)
 
     def generate_patches_2d(self):
         super(SimulationComplexStrategy, self).generate_patches_2d()
