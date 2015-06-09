@@ -172,7 +172,31 @@ class Simulation(object):
         self.with_history = with_history
 
         self.graph = nx.Graph()
-        # generate positions in 2d space for patches
+        self.generate_patches_2d()
+        self.place_civs_on_map()
+
+        # keep track of changes in history
+        if self.with_history:
+            self.save_history()
+
+    def place_civs_on_map(self):
+        civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
+                                            size=(len(self.civs),))
+        for i, civ_pos in enumerate(civ_posistions):
+            # each civ will have 3 neighboring patches
+            civ_patch = self.patches[civ_pos]
+            civ_patch.status = self.civs[i]['color']
+            self.civs[i]['patches'] = set([civ_patch])
+            for civ_ngb in self.graph[civ_patch]:
+                # choose neighbors that are not already taken
+                if civ_ngb.status != 'w':
+                    continue
+                civ_ngb.status = self.civs[i]['color']
+                self.civs[i]['patches'].add(civ_ngb)
+                if len(self.civs[i]['patches']) > 2:
+                    break
+
+    def generate_patches_2d(self):
         positions = np.random.uniform(high=100, size=(self.nr_patches,2))
         # add patches to the graph
         for i in range(self.nr_patches):
@@ -187,29 +211,6 @@ class Simulation(object):
                 dist = np.sqrt((p1.pos[1]-p2.pos[1])**2+(p1.pos[0]-p2.pos[0])**2)
                 if dist <= self.c_distance:
                     self.graph.add_edge(p1,p2)
-
-        # place civilisations
-        civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
-                                            size=(len(self.civs),))
-        for i, civ_pos in enumerate(civ_posistions):
-            # each civ will have 3 neighboring patches
-            civ_patch = self.patches[civ_pos]
-            civ_patch.status = self.civs[i]['color']
-            self.civs[i]['patches'] = set([civ_patch])
-            civ_counter = 1
-            for civ_ngb in self.graph[civ_patch]:
-                # choose neighbors that are not already taken
-                if civ_ngb.status != 'w':
-                    continue
-                civ_ngb.status = self.civs[i]['color']
-                self.civs[i]['patches'].add(civ_ngb)
-                civ_counter += 1
-                if civ_counter > 2:
-                    break
-
-        # keep track of changes in history
-        if self.with_history:
-            self.save_history()
 
     def run_simulation(self, steps=1):
         for step in range(steps):
@@ -279,3 +280,7 @@ class Simulation(object):
             args.append(civ['color'])
         kwargs = {'figure': pylab.figure(2, (8,8))}
         pylab.plot(*args, **kwargs)
+
+
+class SimulationSimpleStrategy(Simulation):
+    pass
