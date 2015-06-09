@@ -160,12 +160,24 @@ class Patch:
         return self.label == other.label
 
 
+class Civilisation(object):
+    def __init__(self, flag):
+        self.flag = flag
+        self.patches = []
+
+    def add_patch(self, patch):
+        self.patches.add(patch)
+
+    def remove_patch(self, patch):
+        self.patches.remove(patch)
+
+
 class Simulation(object):
     nr_patches = 100   # Number of patches
     c_distance = 15  # An arbitrary parameter to determine which patches are connected
 
     def __init__(self, with_history=True):
-        self.civs = [{'color': 'r'}, {'color': 'b'}, {'color': 'y'}]
+        self.civs = [Civilisation(flag='r'), Civilisation(flag='b'), Civilisation(flag='y')]
         self.step = 0
         self.patches = []
         self.history = []
@@ -185,15 +197,15 @@ class Simulation(object):
         for i, civ_pos in enumerate(civ_posistions):
             # each civ will have 3 neighboring patches
             civ_patch = self.patches[civ_pos]
-            civ_patch.status = self.civs[i]['color']
-            self.civs[i]['patches'] = set([civ_patch])
+            civ_patch.status = self.civs[i].flag
+            self.civs[i].patches = set([civ_patch])
             for civ_ngb in self.graph[civ_patch]:
                 # choose neighbors that are not already taken
                 if civ_ngb.status != 'w':
                     continue
-                civ_ngb.status = self.civs[i]['color']
-                self.civs[i]['patches'].add(civ_ngb)
-                if len(self.civs[i]['patches']) > 2:
+                civ_ngb.status = self.civs[i].flag
+                self.civs[i].add_patch(civ_ngb)
+                if len(self.civs[i].patches) > 2:
                     break
 
     def generate_patches_2d(self):
@@ -220,10 +232,10 @@ class Simulation(object):
                 # at each step only one attempt to conquer a patch can be made
                 attempts = set()
                 conquered = set()
-                for patch in civ['patches']:
+                for patch in civ.patches:
                     for neighbor in self.graph[patch]:
                         # make sure this civ doesn't own the patch already
-                        if neighbor.status == civ['color']:
+                        if neighbor.status == civ.flag:
                             continue
                         # an attempt was already made this turn
                         if neighbor in attempts:
@@ -235,12 +247,12 @@ class Simulation(object):
                             if neighbor.status != 'w':
                                 # the patch belongs to another civ
                                 other_civ = self.get_civ_by_color(neighbor.status)
-                                other_civ['patches'].remove(neighbor)
+                                other_civ.remove_patch(neighbor)
                             conquered.add(neighbor)
                 # claim conquered patches
                 for patch in conquered:
-                    patch.status = civ['color']
-                    civ['patches'].add(patch)
+                    patch.status = civ.flag
+                    civ.add_patch(patch)
 
             if self.with_history:
                 self.save_history()
@@ -251,18 +263,18 @@ class Simulation(object):
         total = len(self.graph[patch]) + 1
         # number of neighbors belonging to this civ
         civ_ngbs = len([ngb for ngb in self.graph[patch]
-                        if ngb.status == civ['color']])
+                        if ngb.status == civ.flag])
         # random component
         return bool(np.random.binomial(1, float(civ_ngbs)/total))
 
     def get_civ_by_color(self, color):
         for civ in self.civs:
-            if civ['color'] == color:
+            if civ.flag == color:
                 return civ
 
     def save_history(self):
         self.history.append(
-            {civ['color']: len(civ['patches']) for civ in self.civs})
+            {civ.flag: len(civ.patches) for civ in self.civs})
 
     def draw_graph(self):
         pylab.figure(1, figsize=(8, 8))
@@ -276,8 +288,8 @@ class Simulation(object):
         args = []
         for civ in self.civs:
             args.append(time)
-            args.append([h[civ['color']] for h in self.history])
-            args.append(civ['color'])
+            args.append([h[civ.flag] for h in self.history])
+            args.append(civ.flag)
         kwargs = {'figure': pylab.figure(2, (8,8))}
         pylab.plot(*args, **kwargs)
 
