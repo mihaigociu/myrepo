@@ -163,7 +163,7 @@ class Patch:
 class Civilisation(object):
     def __init__(self, flag):
         self.flag = flag
-        self.patches = []
+        self.patches = set()
 
     def add_patch(self, patch):
         self.patches.add(patch)
@@ -177,7 +177,7 @@ class Simulation(object):
     c_distance = 15  # An arbitrary parameter to determine which patches are connected
 
     def __init__(self, with_history=True):
-        self.civs = [Civilisation(flag='r'), Civilisation(flag='b'), Civilisation(flag='y')]
+        self.civs = self.create_civilisations()
         self.step = 0
         self.patches = []
         self.history = []
@@ -191,6 +191,10 @@ class Simulation(object):
         if self.with_history:
             self.save_history()
 
+    def create_civilisations(self):
+        return [Civilisation(flag='r'), Civilisation(flag='b'),
+                Civilisation(flag='y')]
+
     def place_civs_on_map(self):
         civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
                                             size=(len(self.civs),))
@@ -198,7 +202,7 @@ class Simulation(object):
             # each civ will have 3 neighboring patches
             civ_patch = self.patches[civ_pos]
             civ_patch.status = self.civs[i].flag
-            self.civs[i].patches = set([civ_patch])
+            self.civs[i].patches.add(civ_patch)
             for civ_ngb in self.graph[civ_patch]:
                 # choose neighbors that are not already taken
                 if civ_ngb.status != 'w':
@@ -294,5 +298,72 @@ class Simulation(object):
         pylab.plot(*args, **kwargs)
 
 
+class CivilisationRandomStrategy(Civilisation):
+    def run_strategy(self, graph):
+        ''' Will return a list of nodes that this civ is trying to conquer.'''
+        neighbors = set()
+        for patch in self.patches:
+            for neighbor in graph[patch]:
+                neighbors.add(neighbor)
+        if not neighbors:
+            return []
+        return random.choice(list(neighbors), len(self.patches)/3 or 1)
+
+
 class SimulationSimpleStrategy(Simulation):
-    pass
+    def create_civilisations(self):
+        return [CivilisationRandomStrategy(flag='r'),
+                CivilisationRandomStrategy(flag='b'),
+                CivilisationRandomStrategy(flag='y')]
+
+    def run_simulation(self, steps=1):
+        for step in range(steps):
+            # do actions for each civ
+            for civ in self.civs:
+                # for each node a civ will try to expand to the neighbors
+                # at each step only one attempt to conquer a patch can be made
+                attempts = set()
+                conquered = set()
+                move = civ.run_strategy(self.graph)
+                if not self.check_move(civ, move):
+                    continue
+                for patch in move:
+                    # make sure this civ doesn't own the patch already
+                    if patch.status == civ.flag:
+                        continue
+                    # an attempt was already made this turn
+                    if patch in attempts:
+                        continue
+                    # try to conquer the patch
+                    result = self.conquer(patch, civ)
+                    attempts.add(patch)
+                    if result:
+                        if patch.status != 'w':
+                            # the patch belongs to another civ
+                            other_civ = self.get_civ_by_color(patch.status)
+                            other_civ.remove_patch(patch)
+                        conquered.add(patch)
+                # claim conquered patches
+                for patch in conquered:
+                    patch.status = civ.flag
+                    civ.add_patch(patch)
+
+            if self.with_history:
+                self.save_history()
+            self.step += 1
+
+    def check_move(self, civ, patches):
+        '''Will check if the move is valid.'''
+        # a civ can't attempt to conquer more than a third of the number of patches it already has
+        if len(patches) > 1 and len(patches) > len(civ.patches)/3:
+            return False
+        # a civ can only conquer its neighboring patches
+        for patch in patches:
+            valid = False
+            for neighbor in self.graph[patch]:
+                if neighbor.status == civ.flag:
+                    valid = True
+                    break
+            if not valid:
+                return False
+        return True
