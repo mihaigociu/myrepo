@@ -332,9 +332,9 @@ class CivilisationNaiveStrategy(Civilisation):
         return [node for (node, connex) in move[:len(self.patches)/3 or 1]]
 
 
-class SimulationSimpleStrategy(Simulation):
+class SimulationRandomStrategy(Simulation):
     def create_civilisations(self):
-        return [CivilisationNaiveStrategy(flag='r'),
+        return [CivilisationRandomStrategy(flag='r'),
                 CivilisationRandomStrategy(flag='b'),
                 CivilisationRandomStrategy(flag='y')]
 
@@ -391,3 +391,10 @@ class SimulationSimpleStrategy(Simulation):
                 print 'Invalid move: %s attempt to conquer nodes that are not neighbors.' % (civ.flag,)
                 return False
         return True
+
+
+class SimulationNaiveStrategy(SimulationRandomStrategy):
+    def create_civilisations(self):
+        return [CivilisationNaiveStrategy(flag='r'),
+                CivilisationRandomStrategy(flag='b'),
+                CivilisationRandomStrategy(flag='y')]
