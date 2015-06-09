@@ -216,7 +216,7 @@ class Simulation(object):
         positions = np.random.uniform(high=100, size=(self.nr_patches,2))
         # add patches to the graph
         for i in range(self.nr_patches):
-            patch = Patch(label=i, pos=positions[i])
+            patch = self.generate_patch(label=i, pos=positions[i])
             self.graph.add_node(patch)
             self.patches.append(patch)
         # add edges
@@ -227,6 +227,9 @@ class Simulation(object):
                 dist = np.sqrt((p1.pos[1]-p2.pos[1])**2+(p1.pos[0]-p2.pos[0])**2)
                 if dist <= self.c_distance:
                     self.graph.add_edge(p1,p2)
+
+    def generate_patch(self, label, pos):
+        return Patch(label=label, pos=pos)
 
     def run_simulation(self, steps=1):
         for step in range(steps):
@@ -398,3 +401,72 @@ class SimulationNaiveStrategy(SimulationRandomStrategy):
         return [CivilisationNaiveStrategy(flag='r'),
                 CivilisationRandomStrategy(flag='b'),
                 CivilisationRandomStrategy(flag='y')]
+
+
+class WeightedPatch(Patch):
+    def __init__(self, label, status='w', pos=(0,0), weight=1):
+        self.status = status
+        self.pos = pos
+        self.label = label
+        self.weight = weight
+
+    def __str__(self):
+        return(str(self.weight))
+
+    def __repr__(self):
+        return(str(self.weight))
+
+
+class SimulationComplexStrategy(SimulationRandomStrategy):
+    c_distance = 12
+    max_big_cities = 7 # max number of big cities on map
+    max_cities = 4 # max number of cities for a big city
+
+    def generate_patches_2d(self):
+        super(SimulationComplexStrategy, self).generate_patches_2d()
+        self.add_weights_to_patches()
+
+    def add_weights_to_patches(self):
+        # max 5% of the nodes will be big cities
+        nodes = set(self.graph.nodes())
+        big_cities = set()
+        # max 15% of the nodes will be cities
+
+        while len(big_cities) < self.max_big_cities and len(nodes) > 0:
+            big_city = nodes.pop()
+            big_city.weight = 10
+            big_cities.add(big_city)
+
+            cities = self.neighborhood(big_city, 1)
+            nr_cities = 0
+            for city in cities:
+                if city not in nodes:
+                    continue
+                if nr_cities < self.max_cities:
+                    city.weight = 5
+                nr_cities += 1
+                nodes.remove(city)
+
+            towns = self.neighborhood(big_city, 2)
+            for town in towns:
+                if town not in neighbors:
+                    continue
+                nodes.remove(town)
+
+    def conquer(self, patch, civ):
+        # total sum of weights of the neighbors plus the weight of the node itself
+        total_sum = sum([neighbor.weight for neighbor in self.graph[patch]])
+        total_sum += patch.weight
+        # sum of weigths of the neighbors belonging to this civ
+        civ_sum = sum([ngb.weight for ngb in self.graph[patch]
+                                if ngb.status == civ.flag])
+        # random component
+        return bool(np.random.binomial(1, float(civ_sum)/total_sum))
+
+    def neighborhood(self, node, n):
+        path_lengths = nx.single_source_dijkstra_path_length(self.graph, node)
+        return [node for node, length in path_lengths.iteritems()
+                        if length == n]
+
+    def generate_patch(self, label, pos):
+        return WeightedPatch(label=label, pos=pos)
