@@ -304,15 +304,37 @@ class CivilisationRandomStrategy(Civilisation):
         neighbors = set()
         for patch in self.patches:
             for neighbor in graph[patch]:
+                if neighbor in self.patches:
+                    continue
                 neighbors.add(neighbor)
         if not neighbors:
             return []
         return random.choice(list(neighbors), len(self.patches)/3 or 1)
 
 
+class CivilisationNaiveStrategy(Civilisation):
+    def run_strategy(self, graph):
+        ''' Will return a list of nodes that this civ is trying to conquer.'''
+        neighbors = {}
+        for patch in self.patches:
+            for neighbor in graph[patch]:
+                if neighbor in self.patches:
+                    continue
+                if neighbor in neighbors:
+                    neighbors[neighbor] += 1
+                else:
+                    neighbors[neighbor] = 1
+        if not neighbors:
+            return []
+        move = neighbors.items()
+        # sort the orders by the number of connections it has with the civ
+        move.sort(key=lambda x: -x[1])
+        return [node for (node, connex) in move[:len(self.patches)/3 or 1]]
+
+
 class SimulationSimpleStrategy(Simulation):
     def create_civilisations(self):
-        return [CivilisationRandomStrategy(flag='r'),
+        return [CivilisationNaiveStrategy(flag='r'),
                 CivilisationRandomStrategy(flag='b'),
                 CivilisationRandomStrategy(flag='y')]
 
@@ -356,6 +378,7 @@ class SimulationSimpleStrategy(Simulation):
         '''Will check if the move is valid.'''
         # a civ can't attempt to conquer more than a third of the number of patches it already has
         if len(patches) > 1 and len(patches) > len(civ.patches)/3:
+            print 'Invalid move: %s attempt to conquer to many nodes.' % (civ.flag,)
             return False
         # a civ can only conquer its neighboring patches
         for patch in patches:
@@ -365,5 +388,6 @@ class SimulationSimpleStrategy(Simulation):
                     valid = True
                     break
             if not valid:
+                print 'Invalid move: %s attempt to conquer nodes that are not neighbors.' % (civ.flag,)
                 return False
         return True
