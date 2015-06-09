@@ -425,6 +425,8 @@ class SimulationComplexStrategy(SimulationRandomStrategy):
     max_big_cities = 7 # max number of big cities on map
     max_cities = 4 # max number of cities for a big city
 
+    _path_lengths = {}
+
     def generate_patches_2d(self):
         super(SimulationComplexStrategy, self).generate_patches_2d()
         # because we might get too many connected components in the graph, we will extend the edges
@@ -481,7 +483,10 @@ class SimulationComplexStrategy(SimulationRandomStrategy):
         return bool(np.random.binomial(1, float(civ_sum)/total_sum))
 
     def neighborhood(self, node, n):
-        path_lengths = nx.single_source_dijkstra_path_length(self.graph, node)
+        path_lengths = self._path_lengths.get(node)
+        if not path_lengths:
+            path_lengths = nx.single_source_dijkstra_path_length(self.graph, node)
+            self._path_lengths[node] = path_lengths
         return [node for node, length in path_lengths.iteritems()
                         if length == n]
 
