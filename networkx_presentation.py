@@ -305,7 +305,7 @@ class Simulation(object):
 
 class CivilisationRandomStrategy(Civilisation):
     def run_strategy(self, graph):
-        ''' Will return a list of nodes that this civ is trying to conquer.'''
+        ''' Will select a random subset of nodes from the neighbors.'''
         neighbors = set()
         for patch in self.patches:
             for neighbor in graph[patch]:
@@ -316,10 +316,9 @@ class CivilisationRandomStrategy(Civilisation):
             return []
         return random.choice(list(neighbors), len(self.patches)/3 or 1)
 
-
 class CivilisationNaiveStrategy(Civilisation):
     def run_strategy(self, graph):
-        ''' Will return a list of nodes that this civ is trying to conquer.'''
+        ''' Will select the neighbors which are most connected to the civ.'''
         neighbors = {}
         for patch in self.patches:
             for neighbor in graph[patch]:
@@ -335,6 +334,13 @@ class CivilisationNaiveStrategy(Civilisation):
         # sort the orders by the number of connections it has with the civ
         move.sort(key=lambda x: -x[1])
         return [node for (node, connex) in move[:len(self.patches)/3 or 1]]
+
+class CivilisationAggressiveStrategy(CivilisationNaiveStrategy):
+    '''Will attack the nodes of other civs first.'''
+    def run_strategy(self, graph):
+        move = super(CivilisationAggressiveStrategy, self).run_strategy(graph)
+        move.sort(key=lambda node: node.status == 'w')
+        return move
 
 
 class SimulationRandomStrategy(Simulation):
@@ -428,6 +434,11 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
     def __init__(self, with_history=True):
         self._path_lengths = {}
         super(SimulationComplexStrategy, self).__init__(with_history)
+
+    def create_civilisations(self):
+        return [CivilisationNaiveStrategy(flag='r'),
+                CivilisationAggressiveStrategy(flag='b'),
+                CivilisationRandomStrategy(flag='y')]
 
     def generate_patches_2d(self):
         super(SimulationComplexStrategy, self).generate_patches_2d()
