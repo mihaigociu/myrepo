@@ -215,8 +215,7 @@ class Simulation(object):
                 Civilisation(flag='y')]
 
     def place_civs_on_map(self):
-        civ_posistions = np.random.random_integers(low=0, high=self.nr_patches,
-                                            size=(len(self.civs),))
+        civ_posistions = self.generate_civ_start_positions()
         for i, civ_pos in enumerate(civ_posistions):
             # each civ will have 3 neighboring patches
             civ_patch = self.patches[civ_pos]
@@ -230,6 +229,10 @@ class Simulation(object):
                 self.civs[i].add_patch(civ_ngb)
                 if len(self.civs[i].patches) > 2:
                     break
+
+    def generate_civ_start_positions(self):
+        return np.random.random_integers(low=0, high=self.nr_patches,
+                                            size=(len(self.civs),))
 
     def generate_patches_2d(self):
         # maybe use some Barabasi-Albert graph instead of random generation?
@@ -507,6 +510,7 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
 
     def __init__(self, with_history=True):
         self._path_lengths = {}
+        self.big_cities = set()
         super(SimulationComplexStrategy, self).__init__(with_history)
 
     def create_civilisations(self):
@@ -534,14 +538,12 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
 
     def add_weights_to_patches(self):
         # max 5% of the nodes will be big cities
-        nodes = set(self.graph.nodes())
-        big_cities = set()
         # max 15% of the nodes will be cities
-
-        while len(big_cities) < self.max_big_cities and len(nodes) > 0:
+        nodes = set(self.graph.nodes())
+        while len(self.big_cities) < self.max_big_cities and len(nodes) > 0:
             big_city = nodes.pop()
             big_city.weight = WeightedPatch.BIG_CITY_WEIGHT
-            big_cities.add(big_city)
+            self.big_cities.add(big_city)
 
             cities = self.neighborhood(big_city, 1)
             nr_cities = 0
@@ -558,6 +560,9 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
                 if town not in nodes:
                     continue
                 nodes.remove(town)
+
+    def generate_civ_start_positions(self):
+        return [self.big_cities.pop().label for civ in self.civs]
 
     def conquer(self, patch, civ):
         # total sum of weights of the neighbors plus the weight of the node itself
