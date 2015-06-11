@@ -4,6 +4,8 @@ import numpy as np
 import requests
 import pylab
 
+from orderedset import OrderedSet
+
 %pylab inline
 
 # A standard programming interface and graph implementation that is suitable for many applications
@@ -334,6 +336,7 @@ class CivilisationRandomStrategy(Civilisation):
             return []
         return random.choice(list(neighbors), len(self.patches)/3 or 1)
 
+
 class CivilisationNaiveStrategy(Civilisation):
     def run_strategy(self, graph):
         ''' Will select the neighbors which are most connected to the civ.'''
@@ -360,23 +363,32 @@ class CivilisationNaiveStrategy(Civilisation):
                     neighbors[neighbor] = 1
         return neighbors
 
+
+class CivilisationAggressiveStrategy(CivilisationNaiveStrategy):
+    '''Will attack the nodes of other civs first.'''
+    def run_strategy(self, graph):
+        move = super(CivilisationAggressiveStrategy, self).run_strategy(graph)
+        move.sort(key=lambda node: node.status == 'w')
+        return move
+
+
 class CivilisationBigCityStrategy(CivilisationNaiveStrategy):
     def run_strategy(self, graph):
         '''Will try to take and keep big cities around it.'''
         neighbors = self.get_neighbors(graph)
 
         # first look if there is any big city within the civ and secure the borders
-        move = self.secure_borders(graph, neighbors)
+        move = OrderedSet((patch for patch in self.secure_borders(graph, neighbors)))
         if len(move) >= len(self.patches)/3:
             return move[:len(self.patches)/3 or 1]
 
         # now look if there are big cities in the vecinity (2 degree) and try to get them
-        move.extend(self.get_big_cities(graph, neighbors))
+        move.update((patch for patch in self.get_big_cities(graph, neighbors)))
         if len(move) >= len(self.patches)/3:
             return move[:len(self.patches)/3 or 1]
 
         # go to naive strategy
-        move.extend(self.neighbors_move(neighbors))
+        move.update((patch for patch in self.neighbors_move(neighbors)))
         if len(move) >= len(self.patches)/3:
             return move[:len(self.patches)/3 or 1]
 
@@ -407,19 +419,15 @@ class CivilisationBigCityStrategy(CivilisationNaiveStrategy):
     def big_cities_move(self, graph, neighbors, big_cities):
         move = set()
         for big_city in big_cities:
+            # before attacking the big city (if we don't own it already) try to conquer its borders
             for border in nx.single_source_dijkstra_path_length(graph, big_city, 2):
                 if border not in self.patches and border in neighbors:
                     move.add(border)
+            if big_city in neighbors:
+                move.add(big_city)
 
         move = [patch for patch in move]
         move.sort(key=lambda patch: -neighbors.get(patch))
-        return move
-
-class CivilisationAggressiveStrategy(CivilisationNaiveStrategy):
-    '''Will attack the nodes of other civs first.'''
-    def run_strategy(self, graph):
-        move = super(CivilisationAggressiveStrategy, self).run_strategy(graph)
-        move.sort(key=lambda node: node.status == 'w')
         return move
 
 
