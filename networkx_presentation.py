@@ -369,17 +369,11 @@ class CivilisationBigCityStrategy(CivilisationNaiveStrategy):
         move = self.secure_borders(graph, neighbors)
         if len(move) >= len(self.patches)/3:
             return move[:len(self.patches)/3 or 1]
-        # clean neighbors for the next step of the strategy to prevent duplicate nodes in the move
-        for patch in move:
-            neighbors.pop(patch)
 
         # now look if there are big cities in the vecinity (2 degree) and try to get them
         move.extend(self.get_big_cities(graph, neighbors))
         if len(move) >= len(self.patches)/3:
             return move[:len(self.patches)/3 or 1]
-        # cleaning neighbors
-        for patch in move:
-            neighbors.pop(patch)
 
         # go to naive strategy
         move.extend(self.neighbors_move(neighbors))
@@ -415,7 +409,7 @@ class CivilisationBigCityStrategy(CivilisationNaiveStrategy):
         for big_city in big_cities:
             for border in nx.single_source_dijkstra_path_length(graph, big_city, 2):
                 if border not in self.patches and border in neighbors:
-                    move.add(ngb)
+                    move.add(border)
 
         move = [patch for patch in move]
         move.sort(key=lambda patch: -neighbors.get(patch))
