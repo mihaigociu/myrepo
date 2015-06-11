@@ -160,6 +160,23 @@ class Patch:
         return self.label == other.label
 
 
+class WeightedPatch(Patch):
+    BIG_CITY_WEIGHT = 10
+    CITY_WEIGHT = 5
+
+    def __init__(self, label, status='w', pos=(0,0), weight=1):
+        self.status = status
+        self.pos = pos
+        self.label = label
+        self.weight = weight
+
+    def __str__(self):
+        return(str(self.weight))
+
+    def __repr__(self):
+        return(str(self.weight))
+
+
 class Civilisation(object):
     def __init__(self, flag):
         self.flag = flag
@@ -213,6 +230,7 @@ class Simulation(object):
                     break
 
     def generate_patches_2d(self):
+        # maybe use some Barabasi-Albert graph instead of random generation?
         positions = np.random.uniform(high=100, size=(self.nr_patches,2))
         # add patches to the graph
         for i in range(self.nr_patches):
@@ -319,6 +337,18 @@ class CivilisationRandomStrategy(Civilisation):
 class CivilisationNaiveStrategy(Civilisation):
     def run_strategy(self, graph):
         ''' Will select the neighbors which are most connected to the civ.'''
+        neighbors = self.get_neighbors(graph)
+        if not neighbors:
+            return []
+        return self.neighbors_move(neighbors)
+
+    def neighbors_move(self, neighbors):
+        move = neighbors.items()
+        # sort the orders by the number of connections it has with the civ
+        move.sort(key=lambda x: -x[1])
+        return [node for (node, connex) in move[:len(self.patches)/3 or 1]]
+
+    def get_neighbors(self, graph):
         neighbors = {}
         for patch in self.patches:
             for neighbor in graph[patch]:
@@ -328,12 +358,68 @@ class CivilisationNaiveStrategy(Civilisation):
                     neighbors[neighbor] += 1
                 else:
                     neighbors[neighbor] = 1
-        if not neighbors:
+        return neighbors
+
+class CivilisationBigCityStrategy(CivilisationNaiveStrategy):
+    def run_strategy(self, graph):
+        '''Will try to take and keep big cities around it.'''
+        neighbors = self.get_neighbors(graph)
+
+        # first look if there is any big city within the civ and secure the borders
+        move = self.secure_borders(graph, neighbors)
+        if len(move) >= len(self.patches)/3:
+            return move[:len(self.patches)/3 or 1]
+        # clean neighbors for the next step of the strategy to prevent duplicate nodes in the move
+        for patch in move:
+            neighbors.pop(patch)
+
+        # now look if there are big cities in the vecinity (2 degree) and try to get them
+        move.extend(self.get_big_cities(graph, neighbors))
+        if len(move) >= len(self.patches)/3:
+            return move[:len(self.patches)/3 or 1]
+        # cleaning neighbors
+        for patch in move:
+            neighbors.pop(patch)
+
+        # go to naive strategy
+        move.extend(self.neighbors_move(neighbors))
+        if len(move) >= len(self.patches)/3:
+            return move[:len(self.patches)/3 or 1]
+
+        return move
+
+    def get_big_cities(self, graph, neighbors):
+        big_cities = []
+        for neighbor in neighbors:
+            if neighbor.weight == WeightedPatch.BIG_CITY_WEIGHT:
+                big_cities.append(neighbor)
+                continue # a big city does not have big city neighbors
+            for ngb_2d in graph[neighbor]:
+                if ngb_2d in self.patches:
+                    continue
+                if ngb_2d.weight == WeightedPatch.BIG_CITY_WEIGHT:
+                    big_cities.append(ngb_2d)
+        return self.big_cities_move(graph, neighbors, big_cities)
+
+    def secure_borders(self, graph, neighbors):
+        big_cities = []
+        for patch in self.patches:
+            if patch.weight == WeightedPatch.BIG_CITY_WEIGHT:
+                big_cities.append(patch)
+        if len(big_cities) == 0:
             return []
-        move = neighbors.items()
-        # sort the orders by the number of connections it has with the civ
-        move.sort(key=lambda x: -x[1])
-        return [node for (node, connex) in move[:len(self.patches)/3 or 1]]
+        return self.big_cities_move(graph, neighbors, big_cities)
+
+    def big_cities_move(self, graph, neighbors, big_cities):
+        move = set()
+        for big_city in big_cities:
+            for border in nx.single_source_dijkstra_path_length(graph, big_city, 2):
+                if border not in self.patches and border in neighbors:
+                    move.add(ngb)
+
+        move = [patch for patch in move]
+        move.sort(key=lambda patch: -neighbors.get(patch))
+        return move
 
 class CivilisationAggressiveStrategy(CivilisationNaiveStrategy):
     '''Will attack the nodes of other civs first.'''
@@ -411,20 +497,6 @@ class SimulationNaiveStrategy(SimulationRandomStrategy):
                 CivilisationRandomStrategy(flag='y')]
 
 
-class WeightedPatch(Patch):
-    def __init__(self, label, status='w', pos=(0,0), weight=1):
-        self.status = status
-        self.pos = pos
-        self.label = label
-        self.weight = weight
-
-    def __str__(self):
-        return(str(self.weight))
-
-    def __repr__(self):
-        return(str(self.weight))
-
-
 class SimulationComplexStrategy(SimulationNaiveStrategy):
     c_distance = 12
     c_distance_extended = 15
@@ -438,7 +510,7 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
     def create_civilisations(self):
         return [CivilisationNaiveStrategy(flag='r'),
                 CivilisationAggressiveStrategy(flag='b'),
-                CivilisationRandomStrategy(flag='y')]
+                CivilisationBigCityStrategy(flag='y')]
 
     def generate_patches_2d(self):
         super(SimulationComplexStrategy, self).generate_patches_2d()
@@ -466,7 +538,7 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
 
         while len(big_cities) < self.max_big_cities and len(nodes) > 0:
             big_city = nodes.pop()
-            big_city.weight = 10
+            big_city.weight = WeightedPatch.BIG_CITY_WEIGHT
             big_cities.add(big_city)
 
             cities = self.neighborhood(big_city, 1)
@@ -475,7 +547,7 @@ class SimulationComplexStrategy(SimulationNaiveStrategy):
                 if city not in nodes:
                     continue
                 if nr_cities < self.max_cities:
-                    city.weight = 5
+                    city.weight = WeightedPatch.CITY_WEIGHT
                 nr_cities += 1
                 nodes.remove(city)
 
